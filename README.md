@@ -66,15 +66,15 @@ julia --project=. $(julia -e 'print(joinpath(Sys.BINDIR,"..","share","julia","ju
 
 ## Configuration
 
-`config.toml`:
+`~/.greatminds/config.toml`:
 
 ```toml
 [xai]
 api_key = "xai-..."
 
 [models]
-grok = "grok-3"                        # used for rewriting
-search = "grok-4-fast-non-reasoning"   # used for search + replies
+grok = "grok-4.20-0309-reasoning"      # used for rewriting
+search = "grok-4.20-0309-reasoning"    # used for search + replies
 
 [search]
 similarity_threshold = 0.9             # cutoff for "already expressed"
