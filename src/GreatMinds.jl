@@ -24,4 +24,10 @@ include("screens/detail.jl")
 
 export main
 
+function (@main)(ARGS)
+    stdin isa Base.TTY || return 0
+    main()
+    return 0
+end
+
 end # module

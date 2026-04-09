@@ -10,6 +10,9 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Tachikoma = "468859d6-42d8-48b7-8ad9-1d312e0e3b0a"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
+[apps]
+greatminds = {}
+
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
