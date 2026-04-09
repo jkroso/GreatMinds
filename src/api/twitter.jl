@@ -1,41 +1,41 @@
-const TWITTER_API = "https://api.twitter.com/2"
-
 function fetch_replies(config::Config, tweet_id::String)::Vector{ReplyCluster}
     isempty(tweet_id) && return ReplyCluster[]
 
-    headers = ["Authorization" => "Bearer $(config.twitter_bearer_token)"]
-    query = "conversation_id:$tweet_id"
-    url = "$TWITTER_API/tweets/search/recent?query=$(HTTP.escapeuri(query))&tweet.fields=author_id,text&expansions=author_id&user.fields=username&max_results=100"
+    prompt = """Find replies to this tweet: https://x.com/i/status/$tweet_id
 
+Return a JSON object with a "replies" array. Each reply has: text (the reply text), author (handle with @), similar_count (number of other replies expressing the same point, minimum 1)."""
+
+    input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
     resp = try
-        HTTP.get(url, headers)
+        xai_responses(config, config.search_model, input; tools=["x_search"])
     catch e
-        @warn "Failed to fetch replies" exception=e
+        @warn "Failed to fetch replies via Grok" exception=e
         return ReplyCluster[]
     end
 
-    data = JSON3.read(String(resp.body))
-    tweets = get(data, :data, [])
-    isempty(tweets) && return ReplyCluster[]
-
-    users_list = get(get(data, :includes, Dict()), :users, [])
-    users = Dict(string(u.id) => string(u.username) for u in users_list)
-
-    replies = [(
-        text = string(t.text),
-        author = "@" * get(users, string(t.author_id), "unknown"),
-    ) for t in tweets if string(t.id) != tweet_id]
-
-    clusters = Dict{String,Tuple{String,String,Int}}()
-    for r in replies
-        key = lowercase(strip(r.text))
-        if haskey(clusters, key)
-            _, author, count = clusters[key]
-            clusters[key] = (r.text, author, count + 1)
-        else
-            clusters[key] = (r.text, r.author, 1)
+    content = ""
+    for item in get(resp, :output, [])
+        if get(item, :type, "") == "message"
+            for part in get(item, :content, [])
+                if get(part, :type, "") == "output_text"
+                    content *= get(part, :text, "")
+                end
+            end
         end
     end
 
-    [ReplyCluster(text, author, count) for (_, (text, author, count)) in clusters]
+    isempty(content) && return ReplyCluster[]
+
+    parsed = parse_llm_json(content)
+    replies = if parsed isa AbstractVector
+        parsed
+    else
+        get(parsed, :replies, [])
+    end
+
+    [ReplyCluster(
+        string(get(r, :text, "")),
+        string(get(r, :author, "")),
+        Int(get(r, :similar_count, 1)),
+    ) for r in replies]
 end
