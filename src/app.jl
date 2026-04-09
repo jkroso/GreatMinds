@@ -96,6 +96,14 @@ end
 function update!(m::GreatMindsApp, e::KeyEvent)
     (e.action == key_press || e.action == key_repeat) || return
 
+    # Global hotkey: Ctrl+H clears history
+    if e.key == :ctrl && e.char == 'h'
+        m.history = ThoughtRecord[]
+        save_history(m.history)
+        m.originality_score = 0.5
+        return
+    end
+
     if m.screen == home
         update_home!(m, e)
     elseif m.screen == groking
