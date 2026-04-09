@@ -29,7 +29,6 @@ end
 
 struct Config
     xai_api_key::String
-    twitter_bearer_token::String
     grok_model::String
     search_model::String
     similarity_threshold::Float64

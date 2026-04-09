@@ -1,9 +1,6 @@
 [xai]
 api_key = "xai-YOUR-KEY-HERE"
 
-[twitter]
-bearer_token = "YOUR-BEARER-TOKEN-HERE"
-
 [models]
 grok = "grok-3"
 search = "grok-4-fast-non-reasoning"

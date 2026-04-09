@@ -12,9 +12,6 @@ include("../src/config.jl")
         [xai]
         api_key = "xai-test-key"
 
-        [twitter]
-        bearer_token = "test-bearer"
-
         [models]
         grok = "grok-3"
         search = "grok-4-fast-non-reasoning"
@@ -24,7 +21,6 @@ include("../src/config.jl")
         """)
         cfg = load_config(path)
         @test cfg.xai_api_key == "xai-test-key"
-        @test cfg.twitter_bearer_token == "test-bearer"
         @test cfg.grok_model == "grok-3"
         @test cfg.search_model == "grok-4-fast-non-reasoning"
         @test cfg.similarity_threshold == 0.85
@@ -36,9 +32,6 @@ include("../src/config.jl")
         write(path, """
         [xai]
         api_key = "xai-test-key"
-
-        [twitter]
-        bearer_token = "test-bearer"
         """)
         cfg = load_config(path)
         @test cfg.grok_model == "grok-3"
@@ -54,8 +47,8 @@ include("../src/config.jl")
     @testset "errors on missing api_key" begin
         path = tempname() * ".toml"
         write(path, """
-        [twitter]
-        bearer_token = "test-bearer"
+        [models]
+        grok = "grok-3"
         """)
         @test_throws ErrorException load_config(path)
         rm(path)
