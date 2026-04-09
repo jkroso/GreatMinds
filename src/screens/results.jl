@@ -4,8 +4,12 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
     has_duplicates = any(r.similarity >= threshold for r in m.search_results)
     verdict = results_verdict(tier, !has_duplicates)
 
+    # Center content like the other screens
+    content_width = min(80, area.width - 4)
+    content_area = center(area, content_width, area.height)
+
     layout = Layout(Vertical, [Fixed(3), Fixed(2), Fill()])
-    rects = split_layout(layout, area)
+    rects = split_layout(layout, content_area)
 
     # Title
     title = Paragraph(
