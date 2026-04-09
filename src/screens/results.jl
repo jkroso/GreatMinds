@@ -57,7 +57,7 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
                 push!(spans, Span("\n\n", tstyle(:text)))
             end
         end
-        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.detail_scroll), inner, buf)
+        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.detail_scroll), margin(inner; left=1, right=1), buf)
     end
 end
 

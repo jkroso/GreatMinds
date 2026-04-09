@@ -25,7 +25,8 @@ function render_detail(m::GreatMindsApp, area::Rect, buf::Buffer)
     )
     tweet_inner = render(tweet_block, rects[2], buf)
     tweet_layout = Layout(Vertical, [Fill(), Fixed(1)])
-    tweet_rects = split_layout(tweet_layout, tweet_inner)
+    padded_inner = margin(tweet_inner; left=1, right=1)
+    tweet_rects = split_layout(tweet_layout, padded_inner)
     render(Paragraph(result.text; wrap=word_wrap), tweet_rects[1], buf)
     render(Paragraph(result.url; style=tstyle(:text_dim)), tweet_rects[2], buf)
 
@@ -41,7 +42,7 @@ function render_detail(m::GreatMindsApp, area::Rect, buf::Buffer)
         phrasing_block = Block(border_style=tstyle(:accent))
         phrasing_inner = render(phrasing_block, bottom_rects[2], buf)
         lines = [Span("\u201c$(p.text)\u201d $(p.author)\n", tstyle(:text)) for p in m.similar_phrasings]
-        render(Paragraph(lines; wrap=word_wrap, scroll_offset=m.detail_scroll), phrasing_inner, buf)
+        render(Paragraph(lines; wrap=word_wrap, scroll_offset=m.detail_scroll), margin(phrasing_inner; left=1, right=1), buf)
     end
 
     # Clustered replies
@@ -61,7 +62,7 @@ function render_detail(m::GreatMindsApp, area::Rect, buf::Buffer)
             push!(reply_lines, Span("$(rc.author)$count_str\n", tstyle(:text_dim)))
             push!(reply_lines, Span("  $(rc.text)\n\n", tstyle(:text)))
         end
-        render(Paragraph(reply_lines; wrap=word_wrap), reply_inner, buf)
+        render(Paragraph(reply_lines; wrap=word_wrap), margin(reply_inner; left=1, right=1), buf)
     end
 end
 

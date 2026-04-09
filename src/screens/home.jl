@@ -23,7 +23,7 @@ function render_home(m::GreatMindsApp, area::Rect, buf::Buffer)
     # Input area
     block = Block(border_style=tstyle(:accent))
     inner = render(block, rects[3], buf)
-    render(m.input, inner, buf)
+    render(m.input, margin(inner; left=1, right=1), buf)
 end
 
 function update_home!(m::GreatMindsApp, e::KeyEvent)

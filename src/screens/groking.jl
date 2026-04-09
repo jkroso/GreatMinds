@@ -24,17 +24,17 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     # Original text (dimmed, bordered)
     orig_block = Block(title="Your thought", border_style=tstyle(:text_dim))
     orig_inner = render(orig_block, rects[3], buf)
-    render(Paragraph(m.original_text; wrap=word_wrap, style=tstyle(:text_dim)), orig_inner, buf)
+    render(Paragraph(m.original_text; wrap=word_wrap, style=tstyle(:text_dim)), margin(orig_inner; left=1, right=1), buf)
 
     # Distilled text or loading
     if m.groking_loading
         dist_block = Block(title="Distilling...", border_style=tstyle(:accent))
         dist_inner = render(dist_block, rects[5], buf)
-        render(Paragraph("Groking your thought..."; wrap=word_wrap, style=tstyle(:text_dim, italic=true)), dist_inner, buf)
+        render(Paragraph("Groking your thought..."; wrap=word_wrap, style=tstyle(:text_dim, italic=true)), margin(dist_inner; left=1, right=1), buf)
     else
         dist_block = Block(title="Core idea", border_style=tstyle(:accent))
         dist_inner = render(dist_block, rects[5], buf)
-        render(Paragraph(m.distilled_text; wrap=word_wrap, style=tstyle(:text_bright)), dist_inner, buf)
+        render(Paragraph(m.distilled_text; wrap=word_wrap, style=tstyle(:text_bright)), margin(dist_inner; left=1, right=1), buf)
     end
 end
 
