@@ -1,19 +1,32 @@
 const XAI_BASE = "https://api.x.ai/v1"
 
-function xai_chat(config::Config, model::String, messages::Vector; tools=nothing, temperature=0.7)
-    headers = [
-        "Authorization" => "Bearer $(config.xai_api_key)",
-        "Content-Type" => "application/json",
-    ]
+const XAI_HEADERS(config) = [
+    "Authorization" => "Bearer $(config.xai_api_key)",
+    "Content-Type" => "application/json",
+]
+
+# Chat Completions API — for rewrite (no special tools needed)
+function xai_chat(config::Config, model::String, messages::Vector; temperature=0.7)
     body = Dict{String,Any}(
         "model" => model,
         "messages" => messages,
         "temperature" => temperature,
     )
-    if tools !== nothing
-        body["tools"] = tools
-    end
-    resp = HTTP.post("$XAI_BASE/chat/completions", headers, JSON3.write(body))
+    resp = HTTP.post("$XAI_BASE/chat/completions", XAI_HEADERS(config), JSON3.write(body))
+    JSON3.read(String(resp.body))
+end
+
+# Responses API — for search (supports x_search tool)
+function xai_responses(config::Config, model::String, input::Vector; tools=[], temperature=0.7, instructions=nothing)
+    body = Dict{String,Any}(
+        "model" => model,
+        "input" => input,
+        "temperature" => temperature,
+        "stream" => false,
+    )
+    !isempty(tools) && (body["tools"] = [t isa Dict ? t : Dict("type" => t) for t in tools])
+    instructions !== nothing && (body["instructions"] = instructions)
+    resp = HTTP.post("$XAI_BASE/responses", XAI_HEADERS(config), JSON3.write(body))
     JSON3.read(String(resp.body))
 end
 
@@ -28,7 +41,7 @@ function rewrite(config::Config, thought::String)::String
         xai_chat(config, config.grok_model, messages; temperature=0.3)
     catch e
         @warn "Grok rewrite failed" exception=e
-        return thought  # fall back to original text
+        return thought
     end
     resp.choices[1].message.content
 end
@@ -51,15 +64,27 @@ function search_similar(config::Config, query::String)::Vector{SearchResult}
 
 Return a JSON object with a "posts" array. Each post has: text (exact tweet text), author (handle with @), url (the tweet URL), similarity (float 0.0-1.0 where 1.0=identical idea, 0.9+=same core point). Sort by similarity descending."""
 
-    messages = [Dict("role" => "user", "content" => prompt)]
-    tools = [Dict("type" => "x_search")]
+    input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
     resp = try
-        xai_chat(config, config.search_model, messages; tools=tools)
+        xai_responses(config, config.search_model, input; tools=["x_search"])
     catch e
         @warn "Grok search failed" exception=e
         return SearchResult[]
     end
-    content = resp.choices[1].message.content
+
+    # Responses API returns output array — find the text content
+    content = ""
+    for item in get(resp, :output, [])
+        if get(item, :type, "") == "message"
+            for part in get(item, :content, [])
+                if get(part, :type, "") == "output_text"
+                    content *= get(part, :text, "")
+                end
+            end
+        end
+    end
+
+    isempty(content) && return SearchResult[]
 
     parsed = parse_llm_json(content)
     posts = if parsed isa AbstractVector
