@@ -25,7 +25,9 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
     if isempty(m.search_results)
         render(Paragraph("No results found."; alignment=align_center, style=tstyle(:text_dim)), rects[3], buf)
     else
-        items = [format_result_line(r, threshold, area.width) for r in m.search_results]
+        # Block border takes 2 chars, marker + spacing takes ~4 chars
+        content_width = rects[3].width - 6
+        items = [format_result_line(r, threshold, content_width) for r in m.search_results]
         list = SelectableList(items;
             selected=m.selected_result,
             highlight_style=tstyle(:accent, bold=true),
@@ -39,8 +41,11 @@ function format_result_line(r::SearchResult, threshold::Float64, width::Int)::St
     pct = string(round(Int, r.similarity * 100)) * "%"
     badge = "[$pct]"
     author = r.author
-    max_text = max(10, width - length(badge) - length(author) - 6)
-    text = length(r.text) > max_text ? first(r.text, max_text) * "…" : r.text
+    # Strip newlines from tweet text — tweets often contain line breaks
+    clean_text = replace(r.text, r"[\n\r\t]+" => " ")
+    prefix_len = length(badge) + 1 + length(author) + 1  # "[96%] @author "
+    max_text = max(10, width - prefix_len)
+    text = length(clean_text) > max_text ? first(clean_text, max_text) * "…" : clean_text
     "$badge $author $text"
 end
 
