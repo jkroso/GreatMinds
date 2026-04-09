@@ -66,6 +66,7 @@ function update_results!(m::GreatMindsApp, e::KeyEvent)
         m.screen = groking
     elseif e.key == :enter && !isempty(m.search_results)
         m.detail_scroll = 0
+        m.phrasing_index = 1
         m.similar_phrasings = Phrasing[]
         m.clustered_replies = ReplyCluster[]
         m.replies_loading = true

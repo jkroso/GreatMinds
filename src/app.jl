@@ -17,6 +17,7 @@ mutable struct GreatMindsApp <: Model
     similar_phrasings::Vector{Phrasing}
     clustered_replies::Vector{ReplyCluster}
     detail_scroll::Int
+    phrasing_index::Int
     replies_loading::Bool
     # Personality
     history::Vector{ThoughtRecord}
@@ -36,7 +37,7 @@ function GreatMindsApp(config::Config)
         "", "", false,
         SearchResult[], false, 0,
         1,
-        Phrasing[], ReplyCluster[], 0, false,
+        Phrasing[], ReplyCluster[], 0, 1, false,
         history, score,
         config, TaskQueue(), nothing,
     )
