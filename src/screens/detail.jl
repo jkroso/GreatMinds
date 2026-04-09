@@ -3,8 +3,12 @@ function render_detail(m::GreatMindsApp, area::Rect, buf::Buffer)
     threshold = m.config.similarity_threshold
     pct = string(round(Int, result.similarity * 100)) * "%"
 
+    # Center content like the other screens
+    content_width = min(80, area.width - 4)
+    content_area = center(area, content_width, area.height)
+
     layout = Layout(Vertical, [Fixed(3), Fixed(6), Fill()])
-    rects = split_layout(layout, area)
+    rects = split_layout(layout, content_area)
 
     # Title
     title = Paragraph(
