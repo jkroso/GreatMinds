@@ -42,8 +42,8 @@ function update_home!(m::GreatMindsApp, e::KeyEvent)
     else
         handle_key!(m.input, e)
         # Soft-wrap: re-flow lines to fit within the visible width
-        # Border(2) + padding(2) = 4 chars of chrome
-        wrap_width = INPUT_WIDTH - 4
+        # Border(2) + padding(2) + cursor(1) = 5 chars of chrome
+        wrap_width = INPUT_WIDTH - 5
         soft_wrap_textarea!(m.input, wrap_width)
     end
 end
