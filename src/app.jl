@@ -140,7 +140,17 @@ function update!(m::GreatMindsApp, e::TaskEvent)
     end
 end
 
-function main(config_path::String="config.toml")
+const DEFAULT_CONFIG_PATH = joinpath(homedir(), ".greatminds", "config.toml")
+
+function main(config_path::String=DEFAULT_CONFIG_PATH)
+    if !isfile(config_path)
+        # Try local config.toml as fallback (for development)
+        if isfile("config.toml")
+            config_path = "config.toml"
+        else
+            error("Config not found. Copy config.example.toml to $DEFAULT_CONFIG_PATH")
+        end
+    end
     config = load_config(config_path)
     model = GreatMindsApp(config)
     app(model)

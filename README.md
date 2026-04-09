@@ -5,7 +5,7 @@ A terminal UI for finding out if your thoughts are original. Type a take, and Gr
 ## How it works
 
 1. **Type your take** -- enter whatever's on your mind
-2. **Groking** -- Grok distills your thought down to its core idea, stripping out wit, style, and rhetoric. You can regenerate or approve.
+2. **Groking** -- Grok distills your thought down to its core idea, stripping out wit, style, and rhetoric. If grok gets the essence wrong then you should reword your input until groks response isn’t lossy. Grok will be doing the searching so you need to write for Grok to understand.
 3. **Search** -- Grok searches X for posts expressing the same idea
 4. **Results** -- see who else said it, with similarity scores. Red badges for near-matches, blue for loose ones.
 5. **Detail** -- drill into a result to read replies. Arrow left/right to browse alternative phrasings of the same idea.
@@ -30,8 +30,9 @@ Requires Julia 1.12+ and an [xAI API key](https://console.x.ai/).
 
 ```bash
 git clone <repo> && cd GreatMinds
-cp config.example.toml config.toml
-# Edit config.toml with your XAI API key
+mkdir -p ~/.greatminds
+cp config.example.toml ~/.greatminds/config.toml
+# Edit ~/.greatminds/config.toml with your XAI API key
 ```
 
 ### Install as an app (recommended)
