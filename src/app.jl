@@ -86,11 +86,11 @@ function render_status_bar(m::GreatMindsApp, area::Rect, buf::Buffer)
 end
 
 function status_bar_keys(screen::Screen)::String
-    screen == home      ? "Esc: quit  Enter: grok it" :
+    screen == home      ? "Esc: quit  Enter: grok it  ^H: clear history" :
     screen == groking   ? "Esc: back  R: regenerate  Enter: search" :
     screen == searching ? "Esc: cancel" :
     screen == results   ? "Esc: back  ↑↓: navigate  Enter: detail" :
-    "Esc: back  ↑↓: scroll  O: open in browser"
+    "Esc: back  ↑↓: scroll  ◀▶: phrasings  O: open in browser"
 end
 
 function update!(m::GreatMindsApp, e::KeyEvent)
