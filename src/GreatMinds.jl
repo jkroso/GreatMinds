@@ -15,12 +15,12 @@ include("history.jl")
 include("personality.jl")
 include("api/xai.jl")
 include("api/twitter.jl")
+include("app.jl")
 include("screens/home.jl")
 include("screens/groking.jl")
 include("screens/searching.jl")
 include("screens/results.jl")
 include("screens/detail.jl")
-include("app.jl")
 
 export main
 
