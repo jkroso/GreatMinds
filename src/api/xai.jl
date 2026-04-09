@@ -60,13 +60,14 @@ function parse_llm_json(content::String)
 end
 
 function search_similar(config::Config, query::String)::Vector{SearchResult}
-    prompt = """Search X/Twitter for posts expressing the same core idea as this: "$query"
+    prompt = """Search X for posts expressing the same core idea as this: "$query"
 
-Return a JSON object with a "posts" array. Each post has: text (exact tweet text), author (handle with @), url (the tweet URL), similarity (float 0.0-1.0 where 1.0=identical idea, 0.9+=same core point). Sort by similarity descending."""
+    Return a JSON object with a "posts" array. Each post has: text (exact tweet text), author (handle with @), url (the tweet URL), similarity (float 0.0-1.0 where 1.0=identical idea exoressed in a similar way, 0.5+=similar core point, 0.95+=same core point). Sort by similarity descending.
+    """
 
     input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
     resp = try
-        xai_responses(config, config.search_model, input; tools=["x_search"])
+        xai_responses(config, config.search_model, input; tools=["x_search", "code_execution"])
     catch e
         @warn "Grok search failed" exception=e
         return SearchResult[]
