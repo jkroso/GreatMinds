@@ -2,8 +2,13 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     tier = tone_tier(m.originality_score)
     label = groking_label(tier)
 
+    # Center content horizontally, use middle portion vertically
+    content_width = min(80, area.width - 4)
+    content_height = min(20, area.height - 4)
+    content_area = center(area, content_width, content_height)
+
     layout = Layout(Vertical, [Fixed(3), Fixed(1), Fill(), Fixed(1), Fill()])
-    rects = split_layout(layout, area)
+    rects = split_layout(layout, content_area)
 
     # Title
     title = Paragraph(
@@ -14,7 +19,7 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     render(title, rects[1], buf)
 
     # Label
-    render(Paragraph(label; alignment=align_center), rects[2], buf)
+    render(Paragraph(label; alignment=align_center, style=tstyle(:text_dim)), rects[2], buf)
 
     # Original text (dimmed, bordered)
     orig_block = Block(title="Your thought", border_style=tstyle(:text_dim))
