@@ -28,40 +28,39 @@ The originality score uses an exponential curve -- a 95% similarity match isn't 
 
 Requires Julia 1.12+ and an [xAI API key](https://console.x.ai/).
 
-```bash
-git clone <repo> && cd GreatMinds
-mkdir -p ~/.greatminds
-cp config.example.toml ~/.greatminds/config.toml
-# Edit ~/.greatminds/config.toml with your XAI API key
-```
-
-### Install as an app (recommended)
+### Install
 
 ```julia
 using Pkg
-Pkg.Apps.develop(path="/path/to/GreatMinds")
+Pkg.Apps.add(url="https://github.com/jkroso/GreatMinds.git")
 ```
 
-This creates a `greatminds` shim in `~/.julia/bin/`. Make sure that's in your PATH, then just run:
+Then configure your API key:
+
+```bash
+mkdir -p ~/.greatminds
+cat > ~/.greatminds/config.toml << 'EOF'
+[xai]
+api_key = "xai-YOUR-KEY-HERE"
+EOF
+```
+
+Make sure `~/.julia/bin` is in your PATH, then run:
 
 ```bash
 greatminds
 ```
 
-### Run from source
+### Compile a standalone binary (optional)
+
+For instant startup with no JIT warmup:
 
 ```bash
-julia --project=. -e 'using GreatMinds; GreatMinds.main()'
-```
-
-### Compile a standalone binary
-
-For instant startup with no JIT warmup (~350MB, includes Julia runtime):
-
-```bash
+git clone https://github.com/jkroso/GreatMinds.git && cd GreatMinds
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. $(julia -e 'print(joinpath(Sys.BINDIR,"..","share","julia","juliac","juliac.jl"))') \
   --experimental --output-exe greatminds greatminds.jl
-./greatminds
+cp greatminds /usr/local/bin/
 ```
 
 ## Configuration
