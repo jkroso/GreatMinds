@@ -34,9 +34,30 @@ include("../src/config.jl")
         api_key = "xai-test-key"
         """)
         cfg = load_config(path)
-        @test cfg.grok_model == "grok-3"
-        @test cfg.search_model == "grok-4-fast-non-reasoning"
+        @test cfg.grok_model == "grok-4.20-0309-reasoning"
+        @test cfg.search_model == "grok-4.20-0309-reasoning"
         @test cfg.similarity_threshold == 0.9
+        rm(path)
+    end
+
+    @testset "picks up XAI_API_KEY from env" begin
+        path = tempname() * ".toml"
+        write(path, """
+        [models]
+        grok = "grok-3"
+        """)
+        old = get(ENV, "XAI_API_KEY", nothing)
+        try
+            ENV["XAI_API_KEY"] = "xai-from-env"
+            cfg = load_config(path)
+            @test cfg.xai_api_key == "xai-from-env"
+        finally
+            if old === nothing
+                delete!(ENV, "XAI_API_KEY")
+            else
+                ENV["XAI_API_KEY"] = old
+            end
+        end
         rm(path)
     end
 
@@ -44,13 +65,21 @@ include("../src/config.jl")
         @test_throws ErrorException load_config("/nonexistent/path.toml")
     end
 
-    @testset "errors on missing api_key" begin
+    @testset "errors on missing api_key without env" begin
         path = tempname() * ".toml"
         write(path, """
         [models]
         grok = "grok-3"
         """)
-        @test_throws ErrorException load_config(path)
+        old = get(ENV, "XAI_API_KEY", nothing)
+        try
+            delete!(ENV, "XAI_API_KEY")
+            @test_throws ErrorException load_config(path)
+        finally
+            if old !== nothing
+                ENV["XAI_API_KEY"] = old
+            end
+        end
         rm(path)
     end
 end

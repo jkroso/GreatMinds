@@ -35,14 +35,18 @@ using Pkg
 Pkg.Apps.add(url="https://github.com/jkroso/GreatMinds.git")
 ```
 
-Then configure your API key:
+Then configure your API key (either way works):
 
 ```bash
+# Option A: config file
 mkdir -p ~/.greatminds
 cat > ~/.greatminds/config.toml << 'EOF'
 [xai]
 api_key = "xai-YOUR-KEY-HERE"
 EOF
+
+# Option B: environment variable
+export XAI_API_KEY="xai-YOUR-KEY-HERE"
 ```
 
 Make sure `~/.julia/bin` is in your PATH, then run:
