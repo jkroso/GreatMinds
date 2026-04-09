@@ -1,5 +1,5 @@
 using Test
 
 @testset "GreatMinds" begin
-    # Tests added in subsequent tasks
+    include("config_test.jl")
 end
