@@ -24,7 +24,12 @@ function rewrite(config::Config, thought::String)::String
         Dict("role" => "system", "content" => REWRITE_SYSTEM),
         Dict("role" => "user", "content" => thought),
     ]
-    resp = xai_chat(config, config.grok_model, messages; temperature=0.3)
+    resp = try
+        xai_chat(config, config.grok_model, messages; temperature=0.3)
+    catch e
+        @warn "Grok rewrite failed" exception=e
+        return thought  # fall back to original text
+    end
     resp.choices[1].message.content
 end
 
@@ -48,7 +53,12 @@ Return a JSON object with a "posts" array. Each post has: text (exact tweet text
 
     messages = [Dict("role" => "user", "content" => prompt)]
     tools = [Dict("type" => "x_search")]
-    resp = xai_chat(config, config.search_model, messages; tools=tools)
+    resp = try
+        xai_chat(config, config.search_model, messages; tools=tools)
+    catch e
+        @warn "Grok search failed" exception=e
+        return SearchResult[]
+    end
     content = resp.choices[1].message.content
 
     parsed = parse_llm_json(content)

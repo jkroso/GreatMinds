@@ -40,7 +40,7 @@ function format_result_line(r::SearchResult, threshold::Float64, width::Int)::St
     badge = "[$pct]"
     author = r.author
     max_text = max(10, width - length(badge) - length(author) - 6)
-    text = length(r.text) > max_text ? r.text[1:max_text] * "…" : r.text
+    text = length(r.text) > max_text ? first(r.text, max_text) * "…" : r.text
     "$badge $author $text"
 end
 

@@ -109,10 +109,10 @@ function update!(m::GreatMindsApp, e::KeyEvent)
 end
 
 function update!(m::GreatMindsApp, e::TaskEvent)
-    if e.id == :rewrite
+    if e.id == :rewrite && m.screen == groking
         m.distilled_text = e.value::String
         m.groking_loading = false
-    elseif e.id == :search
+    elseif e.id == :search && m.screen == searching
         m.search_results = e.value::Vector{SearchResult}
         m.searching = false
         m.search_count = length(m.search_results)
@@ -125,7 +125,7 @@ function update!(m::GreatMindsApp, e::TaskEvent)
         save_history(m.history)
         m.originality_score = compute_originality(m.history)
         m.screen = results
-    elseif e.id == :replies
+    elseif e.id == :replies && m.screen == detail
         m.clustered_replies = e.value::Vector{ReplyCluster}
         m.replies_loading = false
     end
