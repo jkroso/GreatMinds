@@ -34,21 +34,34 @@ cp config.example.toml config.toml
 # Edit config.toml with your XAI API key
 ```
 
+### Install as an app (recommended)
+
+```julia
+using Pkg
+Pkg.Apps.develop(path="/path/to/GreatMinds")
+```
+
+This creates a `greatminds` shim in `~/.julia/bin/`. Make sure that's in your PATH, then just run:
+
+```bash
+greatminds
+```
+
 ### Run from source
 
 ```bash
 julia --project=. -e 'using GreatMinds; GreatMinds.main()'
 ```
 
-### Compile a binary
+### Compile a standalone binary
+
+For instant startup with no JIT warmup (~350MB, includes Julia runtime):
 
 ```bash
 julia --project=. $(julia -e 'print(joinpath(Sys.BINDIR,"..","share","julia","juliac","juliac.jl"))') \
   --experimental --output-exe greatminds greatminds.jl
 ./greatminds
 ```
-
-The compiled binary launches instantly with no JIT warmup (~350MB, includes Julia runtime).
 
 ## Configuration
 
