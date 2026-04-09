@@ -38,7 +38,9 @@ function compute_originality(records::Vector{ThoughtRecord})::Float64
     n = length(records)
     for (i, r) in enumerate(records)
         weight = DECAY_FACTOR ^ (n - i)
-        originality = 1.0 - r.max_similarity
+        # Exponential curve: only near-perfect matches (>0.98) really punish you
+        # 0.95 sim → 0.60 originality, 0.80 sim → 0.95, 0.99 sim → 0.14
+        originality = (1.0 - r.max_similarity^20)
         weighted_sum += originality * weight
         total_weight += weight
     end

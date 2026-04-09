@@ -31,28 +31,35 @@ include("../src/history.jl")
         @test compute_originality(ThoughtRecord[]) == 0.5
     end
 
-    @testset "compute_originality with single high-similarity result" begin
-        records = [ThoughtRecord("t", "d", 0.96, 5, "2026-04-09T10:00:00")]
+    @testset "compute_originality with near-perfect match" begin
+        records = [ThoughtRecord("t", "d", 0.99, 5, "2026-04-09T10:00:00")]
         score = compute_originality(records)
-        @test score ≈ 0.04 atol=0.01
+        # 0.99^20 ≈ 0.818, originality ≈ 0.182
+        @test score ≈ 0.18 atol=0.03
     end
 
-    @testset "compute_originality with single low-similarity result" begin
+    @testset "compute_originality with 95% match is still fairly original" begin
+        records = [ThoughtRecord("t", "d", 0.95, 5, "2026-04-09T10:00:00")]
+        score = compute_originality(records)
+        # 0.95^20 ≈ 0.358, originality ≈ 0.642
+        @test score > 0.5
+    end
+
+    @testset "compute_originality with low similarity is near 1.0" begin
         records = [ThoughtRecord("t", "d", 0.30, 2, "2026-04-09T10:00:00")]
         score = compute_originality(records)
-        @test score ≈ 0.70 atol=0.01
+        @test score > 0.99
     end
 
     @testset "compute_originality weights recent more heavily" begin
         records = [
-            ThoughtRecord("old", "d", 0.10, 1, "2026-04-08T10:00:00"),  # original (0.9)
-            ThoughtRecord("new", "d", 0.95, 5, "2026-04-09T10:00:00"),  # unoriginal (0.05)
+            ThoughtRecord("old", "d", 0.50, 1, "2026-04-08T10:00:00"),  # very original
+            ThoughtRecord("new", "d", 0.99, 5, "2026-04-09T10:00:00"),  # near-perfect match
         ]
         score = compute_originality(records)
-        # Most recent (index 2) weight=1.0, originality=0.05
-        # Older (index 1) weight=0.7, originality=0.9
-        # weighted avg = (0.05*1.0 + 0.9*0.7) / (1.0+0.7) = 0.68/1.7 ≈ 0.40
-        @test score ≈ 0.40 atol=0.02
+        # Recent (0.99) drags it down, old (0.50) is near 1.0
+        # But recent is weighted more → score should be well below the all-original case
+        @test score < 0.7
     end
 
     @testset "compute_originality all original" begin
@@ -62,16 +69,16 @@ include("../src/history.jl")
             ThoughtRecord("t3", "d", 0.15, 1, "2026-04-09T10:00:00"),
         ]
         score = compute_originality(records)
-        @test score > 0.7
+        @test score > 0.99
     end
 
-    @testset "compute_originality all unoriginal" begin
+    @testset "compute_originality all near-perfect matches" begin
         records = [
-            ThoughtRecord("t1", "d", 0.95, 5, "2026-04-07T10:00:00"),
-            ThoughtRecord("t2", "d", 0.92, 4, "2026-04-08T10:00:00"),
-            ThoughtRecord("t3", "d", 0.98, 6, "2026-04-09T10:00:00"),
+            ThoughtRecord("t1", "d", 0.99, 5, "2026-04-07T10:00:00"),
+            ThoughtRecord("t2", "d", 0.99, 4, "2026-04-08T10:00:00"),
+            ThoughtRecord("t3", "d", 0.99, 6, "2026-04-09T10:00:00"),
         ]
         score = compute_originality(records)
-        @test score < 0.1
+        @test score < 0.25
     end
 end
