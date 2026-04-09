@@ -21,32 +21,40 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
     suffix = has_duplicates ? " — $dup_count posts ≥$(round(Int, threshold*100))% similar" : ""
     render(Paragraph([Span(verdict, verdict_style), Span(suffix, tstyle(:text_dim))]; alignment=align_center), rects[2], buf)
 
-    # Results list
+    # Results as scrollable paragraphs
     if isempty(m.search_results)
         render(Paragraph("No results found."; alignment=align_center, style=tstyle(:text_dim)), rects[3], buf)
     else
-        # Block border takes 2 chars, marker + spacing takes ~4 chars
-        content_width = rects[3].width - 6
-        items = [format_result_line(r, threshold, content_width) for r in m.search_results]
-        list = SelectableList(items;
-            selected=m.selected_result,
-            highlight_style=tstyle(:accent, bold=true),
-            block=Block(border_style=tstyle(:border)),
-        )
-        render(list, rects[3], buf)
-    end
-end
+        block = Block(border_style=tstyle(:border))
+        inner = render(block, rects[3], buf)
+        spans = Span[]
+        for (i, r) in enumerate(m.search_results)
+            pct = string(round(Int, r.similarity * 100)) * "%"
+            badge_style = r.similarity >= threshold ? tstyle(:error, bold=true) : tstyle(:primary, bold=true)
+            selected = i == m.selected_result
 
-function format_result_line(r::SearchResult, threshold::Float64, width::Int)::String
-    pct = string(round(Int, r.similarity * 100)) * "%"
-    badge = "[$pct]"
-    author = r.author
-    # Strip newlines from tweet text — tweets often contain line breaks
-    clean_text = replace(r.text, r"[\n\r\t]+" => " ")
-    prefix_len = length(badge) + 1 + length(author) + 1  # "[96%] @author "
-    max_text = max(10, width - prefix_len)
-    text = length(clean_text) > max_text ? first(clean_text, max_text) * "…" : clean_text
-    "$badge $author $text"
+            # Selection marker
+            marker = selected ? "▶ " : "  "
+            marker_style = selected ? tstyle(:accent, bold=true) : tstyle(:text)
+            push!(spans, Span(marker, marker_style))
+
+            # Badge
+            push!(spans, Span("[$pct] ", badge_style))
+
+            # Author
+            push!(spans, Span("$(r.author) ", tstyle(:text_dim)))
+
+            # Tweet text — use accent style if selected
+            text_style = selected ? tstyle(:accent) : tstyle(:text)
+            push!(spans, Span(r.text, text_style))
+
+            # Separator between results
+            if i < length(m.search_results)
+                push!(spans, Span("\n\n", tstyle(:text)))
+            end
+        end
+        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.detail_scroll), inner, buf)
+    end
 end
 
 function update_results!(m::GreatMindsApp, e::KeyEvent)
