@@ -2,8 +2,13 @@ function render_home(m::GreatMindsApp, area::Rect, buf::Buffer)
     tier = tone_tier(m.originality_score)
     prompt = input_prompt(tier)
 
-    layout = Layout(Vertical, [Fixed(3), Fill()])
-    rects = split_layout(layout, area)
+    # Center the content vertically — title + input block in the middle third
+    input_height = 5
+    total_height = 3 + 1 + input_height  # title + gap + input
+    content_area = center(area, min(80, area.width - 4), total_height)
+
+    layout = Layout(Vertical, [Fixed(3), Fixed(1), Fill()])
+    rects = split_layout(layout, content_area)
 
     # Title
     title = Paragraph(
@@ -12,10 +17,12 @@ function render_home(m::GreatMindsApp, area::Rect, buf::Buffer)
     )
     render(title, rects[1], buf)
 
-    # Input area with prompt label
-    m.input.label = prompt
-    block = Block(title="Your thought", border_style=tstyle(:border))
-    inner = render(block, rects[2], buf)
+    # Prompt label centered above input
+    render(Paragraph(prompt; alignment=align_center, style=tstyle(:text_dim)), rects[2], buf)
+
+    # Input area
+    block = Block(border_style=tstyle(:accent))
+    inner = render(block, rects[3], buf)
     render(m.input, inner, buf)
 end
 
