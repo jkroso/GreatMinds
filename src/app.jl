@@ -13,6 +13,7 @@ mutable struct GreatMindsApp <: Model
     search_count::Int
     # Results
     selected_result::Int
+    results_scroll::Int
     # Detail
     similar_phrasings::Vector{Phrasing}
     clustered_replies::Vector{ReplyCluster}
@@ -36,7 +37,7 @@ function GreatMindsApp(config::Config)
         TextArea(label=""),
         "", "", false,
         SearchResult[], false, 0,
-        1,
+        1, 0,
         Phrasing[], ReplyCluster[], 0, 1, false,
         history, score,
         config, TaskQueue(), nothing,
@@ -133,6 +134,7 @@ function update!(m::GreatMindsApp, e::TaskEvent)
         push!(m.history, record)
         save_history(m.history)
         m.originality_score = compute_originality(m.history)
+        m.results_scroll = 0
         m.screen = results
     elseif e.id == :replies && m.screen == detail
         m.clustered_replies = e.value::Vector{ReplyCluster}

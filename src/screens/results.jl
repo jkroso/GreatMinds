@@ -57,7 +57,7 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
                 push!(spans, Span("\n\n", tstyle(:text)))
             end
         end
-        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.detail_scroll), margin(inner; left=1, right=1), buf)
+        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.results_scroll), margin(inner; left=1, right=1), buf)
     end
 end
 
@@ -85,7 +85,9 @@ function update_results!(m::GreatMindsApp, e::KeyEvent)
         ]
     elseif e.key == :up && m.selected_result > 1
         m.selected_result -= 1
+        m.results_scroll = max(0, (m.selected_result - 1) * 3)
     elseif e.key == :down && m.selected_result < length(m.search_results)
         m.selected_result += 1
+        m.results_scroll = max(0, (m.selected_result - 1) * 3)
     end
 end
