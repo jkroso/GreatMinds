@@ -29,10 +29,13 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
     if isempty(m.search_results)
         render(Paragraph("No results found."; alignment=align_center, style=tstyle(:text_dim)), rects[3], buf)
     else
-        block = Block(border_style=tstyle(:border))
+        nav = "$(m.selected_result)/$(length(m.search_results))"
+        block = Block(border_style=tstyle(:border), title_right=nav)
         inner = render(block, rects[3], buf)
+        first = m.results_scroll + 1
         spans = Span[]
-        for (i, r) in enumerate(m.search_results)
+        for i in first:length(m.search_results)
+            r = m.search_results[i]
             pct = string(round(Int, r.similarity * 100)) * "%"
             badge_style = r.similarity >= threshold ? tstyle(:error, bold=true) : tstyle(:primary, bold=true)
             selected = i == m.selected_result
@@ -57,7 +60,7 @@ function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
                 push!(spans, Span("\n\n", tstyle(:text)))
             end
         end
-        render(Paragraph(spans; wrap=word_wrap, scroll_offset=m.results_scroll), margin(inner; left=1, right=1), buf)
+        render(Paragraph(spans; wrap=word_wrap), margin(inner; left=1, right=1), buf)
     end
 end
 
@@ -85,9 +88,12 @@ function update_results!(m::GreatMindsApp, e::KeyEvent)
         ]
     elseif e.key == :up && m.selected_result > 1
         m.selected_result -= 1
-        m.results_scroll = max(0, (m.selected_result - 1) * 3)
+        if m.selected_result <= m.results_scroll
+            m.results_scroll = max(0, m.selected_result - 1)
+        end
     elseif e.key == :down && m.selected_result < length(m.search_results)
         m.selected_result += 1
-        m.results_scroll = max(0, (m.selected_result - 1) * 3)
+        # Keep 1 result above for context when scrolling down
+        m.results_scroll = max(0, m.selected_result - 2)
     end
 end
