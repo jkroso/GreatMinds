@@ -61,8 +61,20 @@ include("../src/config.jl")
         rm(path)
     end
 
-    @testset "errors on missing config file" begin
-        @test_throws ErrorException load_config("/nonexistent/path.toml")
+    @testset "uses env var with missing config file" begin
+        old = get(ENV, "XAI_API_KEY", nothing)
+        try
+            ENV["XAI_API_KEY"] = "xai-from-env"
+            cfg = load_config("/nonexistent/path.toml")
+            @test cfg.xai_api_key == "xai-from-env"
+            @test cfg.grok_model == "grok-4.20-0309-reasoning"
+        finally
+            if old === nothing
+                delete!(ENV, "XAI_API_KEY")
+            else
+                ENV["XAI_API_KEY"] = old
+            end
+        end
     end
 
     @testset "errors on missing api_key without env" begin
@@ -81,5 +93,17 @@ include("../src/config.jl")
             end
         end
         rm(path)
+    end
+
+    @testset "errors on missing config file and missing env" begin
+        old = get(ENV, "XAI_API_KEY", nothing)
+        try
+            delete!(ENV, "XAI_API_KEY")
+            @test_throws ErrorException load_config("/nonexistent/path.toml")
+        finally
+            if old !== nothing
+                ENV["XAI_API_KEY"] = old
+            end
+        end
     end
 end

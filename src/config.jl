@@ -1,6 +1,5 @@
 function load_config(path::String)::Config
-    isfile(path) || error("Config file not found: $path")
-    data = TOML.parsefile(path)
+    data = isfile(path) ? TOML.parsefile(path) : Dict()
 
     xai = get(data, "xai", Dict())
     models = get(data, "models", Dict())

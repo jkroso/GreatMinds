@@ -147,8 +147,6 @@ function main(config_path::String=DEFAULT_CONFIG_PATH)
         # Try local config.toml as fallback (for development)
         if isfile("config.toml")
             config_path = "config.toml"
-        else
-            error("Config not found. Copy config.example.toml to $DEFAULT_CONFIG_PATH")
         end
     end
     config = load_config(config_path)
