@@ -29,8 +29,7 @@ end
 
 struct Config
     xai_api_key::String
-    grok_model::String
-    search_model::String
+    model::String
     similarity_threshold::Float64
 end
 

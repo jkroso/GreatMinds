@@ -1,9 +1,6 @@
 [xai]
 api_key = "xai-YOUR-KEY-HERE"
-
-[models]
-grok = "grok-4.20-0309-reasoning"
-search = "grok-4.20-0309-reasoning"
+model = "grok-4.20-0309-reasoning"
 
 [search]
 similarity_threshold = 0.9

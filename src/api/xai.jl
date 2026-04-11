@@ -38,7 +38,7 @@ function rewrite(config::Config, thought::String)::String
         Dict("role" => "user", "content" => thought),
     ]
     resp = try
-        xai_chat(config, config.grok_model, messages; temperature=0.3)
+        xai_chat(config, config.model, messages; temperature=0.3)
     catch e
         @warn "Grok rewrite failed" exception=e
         return thought
@@ -67,7 +67,7 @@ function search_similar(config::Config, query::String)::Vector{SearchResult}
 
     input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
     resp = try
-        xai_responses(config, config.search_model, input; tools=["x_search", "code_execution"])
+        xai_responses(config, config.model, input; tools=["x_search", "code_execution"])
     catch e
         @warn "Grok search failed" exception=e
         return SearchResult[]

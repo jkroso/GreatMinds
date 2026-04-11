@@ -2,7 +2,6 @@ function load_config(path::String)::Config
     data = isfile(path) ? TOML.parsefile(path) : Dict()
 
     xai = get(data, "xai", Dict())
-    models = get(data, "models", Dict())
     search = get(data, "search", Dict())
 
     api_key = get(xai, "api_key", get(ENV, "XAI_API_KEY", ""))
@@ -10,8 +9,7 @@ function load_config(path::String)::Config
 
     Config(
         api_key,
-        get(models, "grok", "grok-4.20-0309-reasoning"),
-        get(models, "search", "grok-4.20-0309-reasoning"),
+        get(xai, "model", "grok-4.20-0309-reasoning"),
         get(search, "similarity_threshold", 0.9),
     )
 end

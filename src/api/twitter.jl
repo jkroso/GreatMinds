@@ -7,7 +7,7 @@ Return a JSON object with a "replies" array. Each reply has: text (the reply tex
 
     input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
     resp = try
-        xai_responses(config, config.search_model, input; tools=["x_search"])
+        xai_responses(config, config.model, input; tools=["x_search"])
     catch e
         @warn "Failed to fetch replies via Grok" exception=e
         return ReplyCluster[]
