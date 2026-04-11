@@ -1,4 +1,4 @@
-@enum Screen home groking searching results detail
+@enum Screen home searching results detail
 
 struct SearchResult
     id::String

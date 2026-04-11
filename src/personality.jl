@@ -14,14 +14,6 @@ function input_prompt(tier::ToneTier)::String
     "What's your take, you absolute psycho?"
 end
 
-function groking_label(tier::ToneTier)::String
-    tier == npc         ? "Here's what you actually meant (we both know someone already said it)" :
-    tier == normie      ? "Here's what you're really saying" :
-    tier == neutral     ? "Here's the core idea" :
-    tier == freethinker ? "Here's the core idea — let's see if it's really new" :
-    "Here's the core idea (brace yourself, this might actually be new)"
-end
-
 function searching_status(tier::ToneTier)::String
     tier == npc         ? "Searching for who said it first..." :
     tier == normie      ? "Let's see how common this is..." :

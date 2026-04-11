@@ -5,17 +5,6 @@ const XAI_HEADERS(config) = [
     "Content-Type" => "application/json",
 ]
 
-# Chat Completions API — for rewrite (no special tools needed)
-function xai_chat(config::Config, model::String, messages::Vector; temperature=0.7)
-    body = Dict{String,Any}(
-        "model" => model,
-        "messages" => messages,
-        "temperature" => temperature,
-    )
-    resp = HTTP.post("$XAI_BASE/chat/completions", XAI_HEADERS(config), JSON3.write(body))
-    JSON3.read(String(resp.body))
-end
-
 # Responses API — for search (supports x_search tool)
 function xai_responses(config::Config, model::String, input::Vector; tools=[], temperature=0.7, instructions=nothing)
     body = Dict{String,Any}(
@@ -28,22 +17,6 @@ function xai_responses(config::Config, model::String, input::Vector; tools=[], t
     instructions !== nothing && (body["instructions"] = instructions)
     resp = HTTP.post("$XAI_BASE/responses", XAI_HEADERS(config), JSON3.write(body))
     JSON3.read(String(resp.body))
-end
-
-const REWRITE_SYSTEM = "You are a rewriter. Take the user's thought and rewrite it as a plain, neutral statement. Remove all wit, humor, sarcasm, metaphor, and style. Keep only the core idea. Return only the rewritten statement, nothing else."
-
-function rewrite(config::Config, thought::String)::String
-    messages = [
-        Dict("role" => "system", "content" => REWRITE_SYSTEM),
-        Dict("role" => "user", "content" => thought),
-    ]
-    resp = try
-        xai_chat(config, config.model, messages; temperature=0.3)
-    catch e
-        @warn "Grok rewrite failed" exception=e
-        return thought
-    end
-    resp.choices[1].message.content
 end
 
 function parse_llm_json(content::String)

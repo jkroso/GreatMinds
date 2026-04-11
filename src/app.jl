@@ -5,11 +5,8 @@ mutable struct GreatMindsApp <: Model
     input::TextArea
     pending_submit_at::Float64   # 0.0 = not pending; otherwise time() of deferred Enter
     pending_newlines::Int        # number of deferred Enter presses to insert on next char
-    # Groking
+    # Search input
     original_text::String
-    distilled_text::String
-    groking_loading::Bool
-    groking_use_original::Bool
     # Search
     search_results::Vector{SearchResult}
     searching::Bool
@@ -38,7 +35,7 @@ function GreatMindsApp(config::Config)
     GreatMindsApp(
         home, false,
         TextArea(label=""), 0.0, 0,
-        "", "", false, false,
+        "",
         SearchResult[], false, 0,
         1, 0,
         Phrasing[], ReplyCluster[], 0, 1, false,
@@ -61,8 +58,6 @@ function view(m::GreatMindsApp, f::Frame)
 
     if m.screen == home
         render_home(m, rects[1], f.buffer)
-    elseif m.screen == groking
-        render_groking(m, rects[1], f.buffer)
     elseif m.screen == searching
         render_searching(m, rects[1], f.buffer)
     elseif m.screen == results
@@ -90,8 +85,7 @@ function render_status_bar(m::GreatMindsApp, area::Rect, buf::Buffer)
 end
 
 function status_bar_keys(screen::Screen)::String
-    screen == home      ? "Esc: quit  Enter: grok it  ^H: clear history" :
-    screen == groking   ? "Esc: back  ↑↓: select  Enter: search" :
+    screen == home      ? "Esc: quit  Enter: search  ^H: clear history" :
     screen == searching ? "Esc: cancel" :
     screen == results   ? "Esc: back  ↑↓: navigate  Enter: detail" :
     "Esc: back  ↑↓: scroll  ◀▶: phrasings  O: open in browser"
@@ -108,12 +102,13 @@ function pre_render!(m::GreatMindsApp)
         m.pending_submit_at = 0.0
         m.pending_newlines = 0
         m.original_text = strip(value(m.input))
-        m.groking_loading = true
-        m.groking_use_original = false
-        m.distilled_text = ""
-        m.screen = groking
-        spawn_task!(m.task_queue_ref, :rewrite) do
-            rewrite(m.config, m.original_text)
+        m.searching = true
+        m.search_results = SearchResult[]
+        m.search_count = 0
+        m.selected_result = 1
+        m.screen = searching
+        spawn_task!(m.task_queue_ref, :search) do
+            search_similar(m.config, m.original_text)
         end
     end
 end
@@ -131,8 +126,6 @@ function update!(m::GreatMindsApp, e::KeyEvent)
 
     if m.screen == home
         update_home!(m, e)
-    elseif m.screen == groking
-        update_groking!(m, e)
     elseif m.screen == searching
         update_searching!(m, e)
     elseif m.screen == results
@@ -143,16 +136,13 @@ function update!(m::GreatMindsApp, e::KeyEvent)
 end
 
 function update!(m::GreatMindsApp, e::TaskEvent)
-    if e.id == :rewrite && m.screen == groking
-        m.distilled_text = e.value::String
-        m.groking_loading = false
-    elseif e.id == :search && m.screen == searching
+    if e.id == :search && m.screen == searching
         m.search_results = e.value::Vector{SearchResult}
         m.searching = false
         m.search_count = length(m.search_results)
         max_sim = isempty(m.search_results) ? 0.0 : maximum(r.similarity for r in m.search_results)
         record = ThoughtRecord(
-            m.original_text, m.distilled_text, max_sim,
+            m.original_text, "", max_sim,
             length(m.search_results), Dates.format(now(), "yyyy-mm-ddTHH:MM:SS"),
         )
         push!(m.history, record)

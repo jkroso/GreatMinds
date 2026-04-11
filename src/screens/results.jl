@@ -66,7 +66,7 @@ end
 
 function update_results!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
-        m.screen = groking
+        m.screen = home
     elseif e.key == :enter && !isempty(m.search_results)
         m.detail_scroll = 0
         m.phrasing_index = 1

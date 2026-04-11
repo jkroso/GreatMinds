@@ -26,6 +26,6 @@ end
 function update_searching!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
         m.searching = false
-        m.screen = groking
+        m.screen = home
     end
 end
