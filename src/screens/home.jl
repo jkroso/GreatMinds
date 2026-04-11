@@ -4,8 +4,8 @@ function render_home(m::GreatMindsApp, area::Rect, buf::Buffer)
     tier = tone_tier(m.originality_score)
     prompt = input_prompt(tier)
 
-    # Center the content vertically — title + input block in the middle third
-    input_height = 7
+    # Size the input box to fit content (border=2, cursor=1 minimum line)
+    input_height = max(3, length(m.input.lines) + 2)
     total_height = 3 + 1 + input_height  # title + gap + input
     content_area = center(area, min(INPUT_WIDTH, area.width - 4), total_height)
 
@@ -31,14 +31,19 @@ end
 function update_home!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
         m.pending_submit_at = 0.0
+        m.pending_newlines = 0
         m.quit = true
     elseif e.key == :enter && !isempty(strip(value(m.input)))
+        m.pending_newlines += 1
         m.pending_submit_at = time()
     else
-        if m.pending_submit_at > 0.0
+        if m.pending_newlines > 0
             # More input arrived after enter — it was a paste, not a submit.
-            # Insert the deferred newline into the textarea instead.
-            handle_key!(m.input, KeyEvent(:enter))
+            # Insert all deferred newlines into the textarea.
+            for _ in 1:m.pending_newlines
+                handle_key!(m.input, KeyEvent(:enter))
+            end
+            m.pending_newlines = 0
             m.pending_submit_at = 0.0
         end
         handle_key!(m.input, e)
@@ -54,42 +59,63 @@ Preserves cursor position across the reflow.
 """
 function soft_wrap_textarea!(ta::TextArea, width::Int)
     width < 1 && return
-    # Flatten all text into a single string, tracking cursor offset
-    flat = ""
-    cursor_offset = 0
-    for (i, line) in enumerate(ta.lines)
-        if i > 1
-            flat *= " "
-            if i <= ta.cursor_row
-                cursor_offset += 1
+
+    # Group lines into paragraphs (runs of non-empty lines),
+    # tracking how many blank lines precede each paragraph.
+    paragraphs = Tuple{Int, Vector{String}}[]  # (preceding_blanks, lines)
+    current_para = String[]
+    blank_count = 0
+    for line in ta.lines
+        s = String(line)
+        if isempty(s)
+            if !isempty(current_para)
+                push!(paragraphs, (blank_count, current_para))
+                current_para = String[]
+                blank_count = 0
             end
+            blank_count += 1
+        else
+            push!(current_para, s)
         end
-        line_str = String(line)
+    end
+    push!(paragraphs, (blank_count, current_para))
+
+    # Compute cursor offset as a flat character position across all lines
+    cursor_offset = 0
+    for i in 1:length(ta.lines)
         if i < ta.cursor_row
-            cursor_offset += length(line)
+            cursor_offset += length(ta.lines[i]) + 1  # +1 for the join char
         elseif i == ta.cursor_row
             cursor_offset += ta.cursor_col
+            break
         end
-        flat *= line_str
     end
 
-    # Word-wrap the flat string
-    words = split(flat, ' ')
+    # Word-wrap each paragraph independently, preserving blank lines
     new_lines = Vector{Char}[]
-    current_line = Char[]
-    for (wi, word) in enumerate(words)
-        chars = collect(word)
-        if isempty(current_line)
-            append!(current_line, chars)
-        elseif length(current_line) + 1 + length(chars) <= width
-            push!(current_line, ' ')
-            append!(current_line, chars)
-        else
-            push!(new_lines, current_line)
-            current_line = copy(chars)
+    for (blanks, para) in paragraphs
+        for _ in 1:blanks
+            push!(new_lines, Char[])
         end
+        isempty(para) && continue
+        flat = join(para, ' ')
+        words = split(flat, ' ')
+        current_line = Char[]
+        for word in words
+            chars = collect(word)
+            if isempty(current_line)
+                append!(current_line, chars)
+            elseif length(current_line) + 1 + length(chars) <= width
+                push!(current_line, ' ')
+                append!(current_line, chars)
+            else
+                push!(new_lines, current_line)
+                current_line = copy(chars)
+            end
+        end
+        push!(new_lines, current_line)
     end
-    push!(new_lines, current_line)
+    isempty(new_lines) && push!(new_lines, Char[])
 
     # Map cursor_offset back to (row, col)
     remaining = cursor_offset
@@ -102,7 +128,7 @@ function soft_wrap_textarea!(ta::TextArea, width::Int)
             new_col = remaining
             break
         end
-        remaining -= line_len + 1  # +1 for the space that became a line break
+        remaining -= line_len + 1
         if remaining < 0
             new_row = i
             new_col = line_len

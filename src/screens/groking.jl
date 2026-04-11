@@ -7,11 +7,14 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     inner_width = content_width - 4
 
     # Build paragraphs so we can measure their wrapped height
-    orig_para = Paragraph(m.original_text; wrap=word_wrap, style=tstyle(:text_dim))
+    use_orig = m.groking_use_original
+    orig_style = use_orig ? tstyle(:text_bright) : tstyle(:text_dim)
+    orig_para = Paragraph(m.original_text; wrap=word_wrap, style=orig_style)
     orig_h = paragraph_line_count(orig_para, inner_width) + 2  # +2 for border
 
     dist_text = m.groking_loading ? "Groking your thought..." : m.distilled_text
-    dist_style = m.groking_loading ? tstyle(:text_dim, italic=true) : tstyle(:text_bright)
+    dist_style = m.groking_loading ? tstyle(:text_dim, italic=true) :
+                 use_orig ? tstyle(:text_dim) : tstyle(:text_bright)
     dist_title = m.groking_loading ? "Distilling..." : "Core idea"
     dist_para = Paragraph(dist_text; wrap=word_wrap, style=dist_style)
     dist_h = paragraph_line_count(dist_para, inner_width) + 2  # +2 for border
@@ -30,8 +33,9 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     )
     render(title, rects[1], buf)
 
-    # Original text (dimmed, bordered)
-    orig_block = Block(title="Your thought", border_style=tstyle(:text_dim))
+    # Original text
+    orig_border = use_orig ? tstyle(:accent) : tstyle(:text_dim)
+    orig_block = Block(title="Your thought", border_style=orig_border)
     orig_inner = render(orig_block, rects[2], buf)
     render(orig_para, margin(orig_inner; left=1, right=1), buf)
 
@@ -39,7 +43,8 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     render(Paragraph(label; alignment=align_center, style=tstyle(:text_dim)), rects[3], buf)
 
     # Distilled text or loading
-    dist_block = Block(title=dist_title, border_style=tstyle(:accent))
+    dist_border = use_orig ? tstyle(:text_dim) : tstyle(:accent)
+    dist_block = Block(title=dist_title, border_style=dist_border)
     dist_inner = render(dist_block, rects[4], buf)
     render(dist_para, margin(dist_inner; left=1, right=1), buf)
 end
@@ -49,20 +54,17 @@ function update_groking!(m::GreatMindsApp, e::KeyEvent)
 
     if e.key == :escape
         m.screen = home
+    elseif (e.key == :up || e.key == :down) && !m.groking_loading
+        m.groking_use_original = !m.groking_use_original
     elseif e.key == :enter && !isempty(m.distilled_text)
+        search_text = m.groking_use_original ? m.original_text : m.distilled_text
         m.searching = true
         m.search_results = SearchResult[]
         m.search_count = 0
         m.selected_result = 1
         m.screen = searching
         spawn_task!(m.task_queue_ref, :search) do
-            search_similar(m.config, m.distilled_text)
-        end
-    elseif e.key == :char && lowercase(e.char) == 'r'
-        m.groking_loading = true
-        m.distilled_text = ""
-        spawn_task!(m.task_queue_ref, :rewrite) do
-            rewrite(m.config, m.original_text)
+            search_similar(m.config, search_text)
         end
     end
 end

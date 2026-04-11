@@ -4,10 +4,12 @@ mutable struct GreatMindsApp <: Model
     # Input
     input::TextArea
     pending_submit_at::Float64   # 0.0 = not pending; otherwise time() of deferred Enter
+    pending_newlines::Int        # number of deferred Enter presses to insert on next char
     # Groking
     original_text::String
     distilled_text::String
     groking_loading::Bool
+    groking_use_original::Bool
     # Search
     search_results::Vector{SearchResult}
     searching::Bool
@@ -35,8 +37,8 @@ function GreatMindsApp(config::Config)
     score = compute_originality(history)
     GreatMindsApp(
         home, false,
-        TextArea(label=""), 0.0,
-        "", "", false,
+        TextArea(label=""), 0.0, 0,
+        "", "", false, false,
         SearchResult[], false, 0,
         1, 0,
         Phrasing[], ReplyCluster[], 0, 1, false,
@@ -89,7 +91,7 @@ end
 
 function status_bar_keys(screen::Screen)::String
     screen == home      ? "Esc: quit  Enter: grok it  ^H: clear history" :
-    screen == groking   ? "Esc: back  R: regenerate  Enter: search" :
+    screen == groking   ? "Esc: back  ↑↓: select  Enter: search" :
     screen == searching ? "Esc: cancel" :
     screen == results   ? "Esc: back  ↑↓: navigate  Enter: detail" :
     "Esc: back  ↑↓: scroll  ◀▶: phrasings  O: open in browser"
@@ -104,8 +106,10 @@ function pre_render!(m::GreatMindsApp)
        time() - m.pending_submit_at >= PASTE_GRACE_S &&
        !isempty(strip(value(m.input)))
         m.pending_submit_at = 0.0
+        m.pending_newlines = 0
         m.original_text = strip(value(m.input))
         m.groking_loading = true
+        m.groking_use_original = false
         m.distilled_text = ""
         m.screen = groking
         spawn_task!(m.task_queue_ref, :rewrite) do
