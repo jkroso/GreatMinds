@@ -2,6 +2,7 @@ module GreatMinds
 
 using Tachikoma
 @tachikoma_app
+import Tachikoma: pre_render!
 using HTTP
 using JSON3
 using TOML

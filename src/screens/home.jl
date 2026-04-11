@@ -30,21 +30,21 @@ end
 
 function update_home!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
+        m.pending_submit_at = 0.0
         m.quit = true
     elseif e.key == :enter && !isempty(strip(value(m.input)))
-        m.original_text = strip(value(m.input))
-        m.groking_loading = true
-        m.distilled_text = ""
-        m.screen = groking
-        spawn_task!(m.task_queue_ref, :rewrite) do
-            rewrite(m.config, m.original_text)
-        end
+        m.pending_submit_at = time()
     else
+        if m.pending_submit_at > 0.0
+            # More input arrived after enter — it was a paste, not a submit.
+            # Insert the deferred newline into the textarea instead.
+            handle_key!(m.input, KeyEvent(:enter))
+            m.pending_submit_at = 0.0
+        end
         handle_key!(m.input, e)
         # Soft-wrap: re-flow lines to fit within the visible width
         # Border(2) + padding(2) + cursor(1) = 5 chars of chrome
-        wrap_width = INPUT_WIDTH - 5
-        soft_wrap_textarea!(m.input, wrap_width)
+        soft_wrap_textarea!(m.input, INPUT_WIDTH - 5)
     end
 end
 

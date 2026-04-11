@@ -3,6 +3,7 @@ mutable struct GreatMindsApp <: Model
     quit::Bool
     # Input
     input::TextArea
+    pending_submit_at::Float64   # 0.0 = not pending; otherwise time() of deferred Enter
     # Groking
     original_text::String
     distilled_text::String
@@ -34,7 +35,7 @@ function GreatMindsApp(config::Config)
     score = compute_originality(history)
     GreatMindsApp(
         home, false,
-        TextArea(label=""),
+        TextArea(label=""), 0.0,
         "", "", false,
         SearchResult[], false, 0,
         1, 0,
@@ -92,6 +93,25 @@ function status_bar_keys(screen::Screen)::String
     screen == searching ? "Esc: cancel" :
     screen == results   ? "Esc: back  ↑↓: navigate  Enter: detail" :
     "Esc: back  ↑↓: scroll  ◀▶: phrasings  O: open in browser"
+end
+
+const PASTE_GRACE_S = 0.05  # 50 ms — long enough for paste bytes to arrive across frames
+
+function pre_render!(m::GreatMindsApp)
+    # Deferred submit: wait for the grace period after Enter so that
+    # newlines in pasted text aren't mistaken for a submit keypress.
+    if m.pending_submit_at > 0.0 && m.screen == home &&
+       time() - m.pending_submit_at >= PASTE_GRACE_S &&
+       !isempty(strip(value(m.input)))
+        m.pending_submit_at = 0.0
+        m.original_text = strip(value(m.input))
+        m.groking_loading = true
+        m.distilled_text = ""
+        m.screen = groking
+        spawn_task!(m.task_queue_ref, :rewrite) do
+            rewrite(m.config, m.original_text)
+        end
+    end
 end
 
 function update!(m::GreatMindsApp, e::KeyEvent)

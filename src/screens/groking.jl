@@ -2,12 +2,24 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     tier = tone_tier(m.originality_score)
     label = groking_label(tier)
 
-    # Center content horizontally, use middle portion vertically
     content_width = min(80, area.width - 4)
-    content_height = min(20, area.height - 4)
-    content_area = center(area, content_width, content_height)
+    # Border(2) + margin(2) = 4 chars of horizontal chrome per box
+    inner_width = content_width - 4
 
-    layout = Layout(Vertical, [Fixed(3), Fill(), Fixed(1), Fill()])
+    # Build paragraphs so we can measure their wrapped height
+    orig_para = Paragraph(m.original_text; wrap=word_wrap, style=tstyle(:text_dim))
+    orig_h = paragraph_line_count(orig_para, inner_width) + 2  # +2 for border
+
+    dist_text = m.groking_loading ? "Groking your thought..." : m.distilled_text
+    dist_style = m.groking_loading ? tstyle(:text_dim, italic=true) : tstyle(:text_bright)
+    dist_title = m.groking_loading ? "Distilling..." : "Core idea"
+    dist_para = Paragraph(dist_text; wrap=word_wrap, style=dist_style)
+    dist_h = paragraph_line_count(dist_para, inner_width) + 2  # +2 for border
+
+    total_h = 3 + orig_h + 1 + dist_h  # title + orig + label + dist
+    content_area = center(area, content_width, min(total_h, area.height - 2))
+
+    layout = Layout(Vertical, [Fixed(3), Fixed(orig_h), Fixed(1), Fill()])
     rects = split_layout(layout, content_area)
 
     # Title
@@ -21,21 +33,15 @@ function render_groking(m::GreatMindsApp, area::Rect, buf::Buffer)
     # Original text (dimmed, bordered)
     orig_block = Block(title="Your thought", border_style=tstyle(:text_dim))
     orig_inner = render(orig_block, rects[2], buf)
-    render(Paragraph(m.original_text; wrap=word_wrap, style=tstyle(:text_dim)), margin(orig_inner; left=1, right=1), buf)
+    render(orig_para, margin(orig_inner; left=1, right=1), buf)
 
     # Label between the two boxes
     render(Paragraph(label; alignment=align_center, style=tstyle(:text_dim)), rects[3], buf)
 
     # Distilled text or loading
-    if m.groking_loading
-        dist_block = Block(title="Distilling...", border_style=tstyle(:accent))
-        dist_inner = render(dist_block, rects[4], buf)
-        render(Paragraph("Groking your thought..."; wrap=word_wrap, style=tstyle(:text_dim, italic=true)), margin(dist_inner; left=1, right=1), buf)
-    else
-        dist_block = Block(title="Core idea", border_style=tstyle(:accent))
-        dist_inner = render(dist_block, rects[4], buf)
-        render(Paragraph(m.distilled_text; wrap=word_wrap, style=tstyle(:text_bright)), margin(dist_inner; left=1, right=1), buf)
-    end
+    dist_block = Block(title=dist_title, border_style=tstyle(:accent))
+    dist_inner = render(dist_block, rects[4], buf)
+    render(dist_para, margin(dist_inner; left=1, right=1), buf)
 end
 
 function update_groking!(m::GreatMindsApp, e::KeyEvent)
