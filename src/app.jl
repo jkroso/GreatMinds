@@ -101,14 +101,33 @@ function pre_render!(m::GreatMindsApp)
        !isempty(strip(value(m.input)))
         m.pending_submit_at = 0.0
         m.pending_newlines = 0
-        m.original_text = strip(value(m.input))
-        m.searching = true
-        m.search_results = SearchResult[]
-        m.search_count = 0
-        m.selected_result = 1
-        m.screen = searching
-        spawn_task!(m.task_queue_ref, :search) do
-            search_similar(m.config, m.original_text)
+        text = String(strip(value(m.input)))
+        m.original_text = text
+
+        tweet = parse_tweet_url(text)
+        if tweet !== nothing
+            tweet_id, url = tweet
+            m.search_results = [SearchResult(tweet_id, "", "", 1.0, url)]
+            m.search_count = 0
+            m.selected_result = 1
+            m.similar_phrasings = Phrasing[]
+            m.clustered_replies = ReplyCluster[]
+            m.detail_scroll = 0
+            m.phrasing_index = 1
+            m.replies_loading = true
+            m.screen = detail
+            spawn_task!(m.task_queue_ref, :tweet_with_replies) do
+                fetch_tweet_and_replies(m.config, tweet_id)
+            end
+        else
+            m.searching = true
+            m.search_results = SearchResult[]
+            m.search_count = 0
+            m.selected_result = 1
+            m.screen = searching
+            spawn_task!(m.task_queue_ref, :search) do
+                search_similar(m.config, m.original_text)
+            end
         end
     end
 end
@@ -152,6 +171,17 @@ function update!(m::GreatMindsApp, e::TaskEvent)
         m.screen = results
     elseif e.id == :replies && m.screen == detail
         m.clustered_replies = e.value::Vector{ReplyCluster}
+        m.replies_loading = false
+    elseif e.id == :tweet_with_replies && m.screen == detail
+        val = e.value
+        if val isa Tuple
+            sr, replies = val
+            if sr !== nothing
+                m.search_results = [sr]
+                m.selected_result = 1
+            end
+            m.clustered_replies = replies
+        end
         m.replies_loading = false
     end
 end

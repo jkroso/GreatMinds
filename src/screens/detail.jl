@@ -67,7 +67,7 @@ end
 
 function update_detail!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
-        m.screen = results
+        m.screen = m.search_count == 0 ? home : results
     elseif e.key == :up && m.detail_scroll > 0
         m.detail_scroll -= 1
     elseif e.key == :down
