@@ -30,7 +30,7 @@ include("../src/config.jl")
         api_key = "xai-test-key"
         """)
         cfg = load_config(path)
-        @test cfg.model == "grok-4.20-0309-reasoning"
+        @test cfg.model == "grok-4.3"
         @test cfg.similarity_threshold == 0.9
         rm(path)
     end
@@ -62,7 +62,7 @@ include("../src/config.jl")
             ENV["XAI_API_KEY"] = "xai-from-env"
             cfg = load_config("/nonexistent/path.toml")
             @test cfg.xai_api_key == "xai-from-env"
-            @test cfg.model == "grok-4.20-0309-reasoning"
+            @test cfg.model == "grok-4.3"
         finally
             if old === nothing
                 delete!(ENV, "XAI_API_KEY")

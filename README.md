@@ -88,10 +88,7 @@ cp greatminds /usr/local/bin/
 ```toml
 [xai]
 api_key = "xai-..."
-
-[models]
-grok = "grok-4.20-0309-reasoning"      # used for rewriting
-search = "grok-4.20-0309-reasoning"    # used for search + replies
+model = "grok-4.3"
 
 [search]
 similarity_threshold = 0.9             # cutoff for "already expressed"
