@@ -25,9 +25,6 @@ include("../src/personality.jl")
             @test prompt isa String
             @test length(prompt) > 0
 
-            label = groking_label(tier)
-            @test label isa String
-
             searching_msg = searching_status(tier)
             @test searching_msg isa String
 

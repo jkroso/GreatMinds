@@ -88,7 +88,7 @@ cp greatminds /usr/local/bin/
 ```toml
 [xai]
 api_key = "xai-..."
-model = "grok-4.3"
+model = "grok-4.5"
 
 [search]
 similarity_threshold = 0.9             # cutoff for "already expressed"

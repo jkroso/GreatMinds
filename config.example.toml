@@ -1,6 +1,6 @@
 [xai]
 api_key = "xai-YOUR-KEY-HERE"
-model = "grok-4.3"
+model = "grok-4.5"
 
 [search]
 similarity_threshold = 0.9

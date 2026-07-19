@@ -9,7 +9,7 @@ function load_config(path::String)::Config
 
     Config(
         api_key,
-        get(xai, "model", "grok-4.3"),
+        get(xai, "model", "grok-4.5"),
         get(search, "similarity_threshold", 0.9),
     )
 end
