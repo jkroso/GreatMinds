@@ -5,4 +5,5 @@ using Test
     include("similarity_test.jl")
     include("history_test.jl")
     include("personality_test.jl")
+    include("api_error_test.jl")
 end

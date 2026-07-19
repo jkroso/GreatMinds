@@ -1,15 +1,31 @@
 function render_results(m::GreatMindsApp, area::Rect, buf::Buffer)
-    tier = tone_tier(m.originality_score)
-    threshold = m.config.similarity_threshold
-    has_duplicates = any(r.similarity >= threshold for r in m.search_results)
-    verdict = results_verdict(tier, !has_duplicates)
-
     # Center content like the other screens
     content_width = min(80, area.width - 4)
     content_area = center(area, content_width, area.height)
 
     layout = Layout(Vertical, [Fixed(3), Fixed(2), Fill()])
     rects = split_layout(layout, content_area)
+
+    if !isempty(m.search_error)
+        title = Paragraph(
+            [Span("GreatMinds", tstyle(:accent, bold=true)),
+             Span(" — Search failed", tstyle(:text_dim))];
+            alignment=align_center,
+        )
+        render(title, rects[1], buf)
+        render(Paragraph("Search failed"; alignment=align_center, style=tstyle(:error, bold=true)), rects[2], buf)
+
+        block = Block(title="Error", border_style=tstyle(:error))
+        inner = render(block, rects[3], buf)
+        render(Paragraph(m.search_error; wrap=word_wrap, style=tstyle(:error)),
+               margin(inner; left=1, right=1), buf)
+        return
+    end
+
+    tier = tone_tier(m.originality_score)
+    threshold = m.config.similarity_threshold
+    has_duplicates = any(r.similarity >= threshold for r in m.search_results)
+    verdict = results_verdict(tier, !has_duplicates)
 
     # Title
     title = Paragraph(
@@ -67,12 +83,14 @@ end
 function update_results!(m::GreatMindsApp, e::KeyEvent)
     if e.key == :escape
         m.screen = home
-    elseif e.key == :enter && !isempty(m.search_results)
+        m.search_error = ""
+    elseif e.key == :enter && !isempty(m.search_results) && isempty(m.search_error)
         m.detail_scroll = 0
         m.phrasing_index = 1
         m.similar_phrasings = Phrasing[]
         m.clustered_replies = ReplyCluster[]
         m.replies_loading = true
+        m.detail_error = ""
         m.screen = detail
 
         result = m.search_results[m.selected_result]

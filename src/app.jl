@@ -11,6 +11,7 @@ mutable struct GreatMindsApp <: Model
     search_results::Vector{SearchResult}
     searching::Bool
     search_count::Int
+    search_error::String          # non-empty when last search failed (API/auth/etc.)
     # Results
     selected_result::Int
     results_scroll::Int
@@ -20,6 +21,7 @@ mutable struct GreatMindsApp <: Model
     detail_scroll::Int
     phrasing_index::Int
     replies_loading::Bool
+    detail_error::String          # non-empty when detail/replies fetch failed
     # Personality
     history::Vector{ThoughtRecord}
     originality_score::Float64
@@ -36,9 +38,9 @@ function GreatMindsApp(config::Config)
         home, false,
         TextArea(label=""), 0.0, 0,
         "",
-        SearchResult[], false, 0,
+        SearchResult[], false, 0, "",
         1, 0,
-        Phrasing[], ReplyCluster[], 0, 1, false,
+        Phrasing[], ReplyCluster[], 0, 1, false, "",
         history, score,
         config, TaskQueue(), nothing,
     )
@@ -78,16 +80,19 @@ function render_status_bar(m::GreatMindsApp, area::Rect, buf::Buffer)
 
     bar = StatusBar(
         left=[Span("[$label $gauge $score_str]", tstyle(:accent, bold=true))],
-        right=[Span(status_bar_keys(m.screen), tstyle(:text_dim))],
+        right=[Span(status_bar_keys(m), tstyle(:text_dim))],
         style=tstyle(:text_dim),
     )
     render(bar, area, buf)
 end
 
-function status_bar_keys(screen::Screen)::String
+function status_bar_keys(m::GreatMindsApp)::String
+    screen = m.screen
     screen == home      ? "Esc: quit  Enter: search  ^H: clear history" :
     screen == searching ? "Esc: cancel" :
-    screen == results   ? "Esc: back  ↑↓: navigate  Enter: detail" :
+    screen == results   ? (isempty(m.search_error) ?
+        "Esc: back  ↑↓: navigate  Enter: detail" :
+        "Esc: back") :
     "Esc: back  ↑↓: scroll  ◀▶: phrasings  O: open in browser"
 end
 
@@ -109,12 +114,14 @@ function pre_render!(m::GreatMindsApp)
             tweet_id, url = tweet
             m.search_results = [SearchResult(tweet_id, "", "", 1.0, url)]
             m.search_count = 0
+            m.search_error = ""
             m.selected_result = 1
             m.similar_phrasings = Phrasing[]
             m.clustered_replies = ReplyCluster[]
             m.detail_scroll = 0
             m.phrasing_index = 1
             m.replies_loading = true
+            m.detail_error = ""
             m.screen = detail
             spawn_task!(m.task_queue_ref, :tweet_with_replies) do
                 fetch_tweet_and_replies(m.config, tweet_id)
@@ -123,6 +130,7 @@ function pre_render!(m::GreatMindsApp)
             m.searching = true
             m.search_results = SearchResult[]
             m.search_count = 0
+            m.search_error = ""
             m.selected_result = 1
             m.screen = searching
             spawn_task!(m.task_queue_ref, :search) do
@@ -156,8 +164,18 @@ end
 
 function update!(m::GreatMindsApp, e::TaskEvent)
     if e.id == :search && m.screen == searching
-        m.search_results = e.value::Vector{SearchResult}
         m.searching = false
+        m.results_scroll = 0
+        m.screen = results
+        if e.value isa Exception
+            m.search_results = SearchResult[]
+            m.search_count = 0
+            m.search_error = format_api_error(e.value)
+            # Failed searches must not pollute originality history.
+            return
+        end
+        m.search_error = ""
+        m.search_results = e.value::Vector{SearchResult}
         m.search_count = length(m.search_results)
         max_sim = isempty(m.search_results) ? 0.0 : maximum(r.similarity for r in m.search_results)
         record = ThoughtRecord(
@@ -167,12 +185,23 @@ function update!(m::GreatMindsApp, e::TaskEvent)
         push!(m.history, record)
         save_history(m.history)
         m.originality_score = compute_originality(m.history)
-        m.results_scroll = 0
-        m.screen = results
     elseif e.id == :replies && m.screen == detail
-        m.clustered_replies = e.value::Vector{ReplyCluster}
         m.replies_loading = false
+        if e.value isa Exception
+            m.clustered_replies = ReplyCluster[]
+            m.detail_error = format_api_error(e.value)
+            return
+        end
+        m.detail_error = ""
+        m.clustered_replies = e.value::Vector{ReplyCluster}
     elseif e.id == :tweet_with_replies && m.screen == detail
+        m.replies_loading = false
+        if e.value isa Exception
+            m.clustered_replies = ReplyCluster[]
+            m.detail_error = format_api_error(e.value)
+            return
+        end
+        m.detail_error = ""
         val = e.value
         if val isa Tuple
             sr, replies = val
@@ -182,7 +211,6 @@ function update!(m::GreatMindsApp, e::TaskEvent)
             end
             m.clustered_replies = replies
         end
-        m.replies_loading = false
     end
 end
 

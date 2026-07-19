@@ -24,23 +24,9 @@ Return a JSON object with:
 - "replies": array of objects, each with text (the reply text), author (handle with @), similar_count (number of other replies expressing the same point, minimum 1)."""
 
     input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
-    resp = try
-        xai_responses(config, config.model, input; tools=["x_search"])
-    catch e
-        @warn "Failed to fetch tweet via Grok" exception=e
-        return (nothing, ReplyCluster[])
-    end
-
-    content = ""
-    for item in get(resp, :output, [])
-        if get(item, :type, "") == "message"
-            for part in get(item, :content, [])
-                if get(part, :type, "") == "output_text"
-                    content *= get(part, :text, "")
-                end
-            end
-        end
-    end
+    # Let API failures propagate so the TUI can display them.
+    resp = xai_responses(config, config.model, input; tools=["x_search"])
+    content = response_text(resp)
 
     isempty(content) && return (nothing, ReplyCluster[])
 
@@ -74,23 +60,9 @@ function fetch_replies(config::Config, tweet_id::String)::Vector{ReplyCluster}
 Return a JSON object with a "replies" array. Each reply has: text (the reply text), author (handle with @), similar_count (number of other replies expressing the same point, minimum 1)."""
 
     input = [Dict("type" => "message", "role" => "user", "content" => prompt)]
-    resp = try
-        xai_responses(config, config.model, input; tools=["x_search"])
-    catch e
-        @warn "Failed to fetch replies via Grok" exception=e
-        return ReplyCluster[]
-    end
-
-    content = ""
-    for item in get(resp, :output, [])
-        if get(item, :type, "") == "message"
-            for part in get(item, :content, [])
-                if get(part, :type, "") == "output_text"
-                    content *= get(part, :text, "")
-                end
-            end
-        end
-    end
+    # Let API failures propagate so the TUI can display them.
+    resp = xai_responses(config, config.model, input; tools=["x_search"])
+    content = response_text(resp)
 
     isempty(content) && return ReplyCluster[]
 
